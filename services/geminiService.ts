@@ -13,7 +13,7 @@ const getClient = () => {
 };
 
 // Most economical and performant model
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = 'gemini-3-flash';
 
 export const getWeddingAdvice = async (query: string, contextData?: string): Promise<string> => {
   const ai = getClient();
