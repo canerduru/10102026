@@ -5,7 +5,7 @@ import { GoogleGenAI } from "@google/genai";
  * API key is always read from process.env.API_KEY.
  */
 const getClient = () => {
-  const apiKey = "AIzaSyCqqMO6veVfYCCC5kbhoAZmMj_cMal9fmk"; // Hardcoded for GitHub Pages
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) {
     return null;
   }
@@ -13,7 +13,7 @@ const getClient = () => {
 };
 
 // Most economical and performant model
-const DEFAULT_MODEL = 'gemini-3-flash';
+const DEFAULT_MODEL = 'gemini-2.0-flash';
 
 export const getWeddingAdvice = async (query: string, contextData?: string): Promise<string> => {
   const ai = getClient();
