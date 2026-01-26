@@ -12,7 +12,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Simple authentication
-    if (password === 'haninge2026') {
+    if (password === 'haninge26') {
       onLogin();
     } else {
       setError('Incorrect password. Access denied.');
