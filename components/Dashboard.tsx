@@ -8,7 +8,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ state }) => {
   const weddingDate = new Date('2026-10-10T00:00:00');
-  const today = new Date('2026-01-26T00:00:00');
+  const today = new Date();
 
   const daysLeft = Math.ceil((weddingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
