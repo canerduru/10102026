@@ -193,7 +193,9 @@ const App: React.FC = () => {
           {view === ViewState.VENDORS && <VendorManager vendors={vendors} setVendors={setVendors} categories={categories} setCategories={setCategories} />}
           {view === ViewState.BUDGET && <BudgetView budget={budget} setBudget={setBudget} vendors={vendors} categories={categories} />}
           {view === ViewState.INSPIRATION && <InspirationBoard notes={notes} setNotes={setNotes} />}
-          {view === ViewState.GUEST_LIST && <GuestList guests={guests} setGuests={setGuests} />}
+          {view === ViewState.GUEST_LIST && <GuestList guests={guests} setGuests={setGuests} onSave={(newGuests) => {
+            setGuests(newGuests);
+          }} />}
         </div>
         <AIChat />
       </main>
