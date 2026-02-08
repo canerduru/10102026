@@ -20,6 +20,7 @@ const VendorManager: React.FC<VendorManagerProps> = ({ vendors, setVendors, cate
   const [hoveredStar, setHoveredStar] = useState<{ id: string, rating: number } | null>(null);
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [tempNotes, setTempNotes] = useState('');
+  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
 
   const filteredVendors = vendors.filter(v =>
     (selectedCategory === 'All' || v.category === selectedCategory) &&
@@ -65,6 +66,24 @@ const VendorManager: React.FC<VendorManagerProps> = ({ vendors, setVendors, cate
       setNewCategoryOpen(false);
       setNewCategoryName('');
     }
+  };
+
+  const handleUpdateVendor = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingVendor) return;
+
+    const formData = new FormData(e.currentTarget);
+    const updatedVendor: Vendor = {
+      ...editingVendor,
+      name: formData.get('name') as string,
+      category: formData.get('category') as VendorCategory,
+      priceEstimate: Number(formData.get('price')),
+      location: formData.get('location') as string,
+      notes: formData.get('notes') as string || editingVendor.notes,
+    };
+
+    setVendors(vendors.map(v => v.id === editingVendor.id ? updatedVendor : v));
+    setEditingVendor(null);
   };
 
   const deleteVendor = (id: string) => {
@@ -178,6 +197,13 @@ const VendorManager: React.FC<VendorManagerProps> = ({ vendors, setVendors, cate
             <div className="p-5 flex-1 flex flex-col">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingVendor(vendor)}
+                    className="p-1.5 bg-stone-100 text-gray-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-stone-200 hover:text-wedding-gold"
+                    title="Edit Vendor"
+                  >
+                    <Edit2 size={14} />
+                  </button>
                   <button
                     onClick={() => deleteVendor(vendor.id)}
                     className="p-1.5 bg-red-100 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-200"
@@ -349,10 +375,96 @@ const VendorManager: React.FC<VendorManagerProps> = ({ vendors, setVendors, cate
                 </div>
               </div>
 
+               <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Notes</label>
+                  <textarea
+                    name="notes"
+                    className="w-full border border-stone-200 rounded-xl p-3 bg-white text-gray-800 focus:ring-2 focus:ring-wedding-gold focus:border-transparent outline-none shadow-sm transition-all"
+                    placeholder="Optional notes..."
+                    rows={2}
+                  />
+               </div>
+
               <div className="pt-2">
                 <button type="submit" className="w-full bg-wedding-gold text-white py-4 rounded-xl font-bold hover:bg-yellow-600 transition-all shadow-lg shadow-wedding-gold/20 flex items-center justify-center gap-2">
                   <Plus size={20} />
                   Add to Portfolio
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Vendor Modal */}
+      {editingVendor && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md animate-scale-in shadow-2xl border border-stone-100">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-2xl font-serif font-bold text-wedding-charcoal">Edit Vendor</h3>
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Update details</p>
+              </div>
+              <button onClick={() => setEditingVendor(null)} className="p-2 hover:bg-stone-50 rounded-full transition-colors text-gray-400"><X size={24} /></button>
+            </div>
+
+            <form onSubmit={handleUpdateVendor} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Vendor Name</label>
+                <input
+                  name="name"
+                  defaultValue={editingVendor.name}
+                  required
+                  className="w-full border border-stone-200 rounded-xl p-3 bg-white text-gray-800 focus:ring-2 focus:ring-wedding-gold focus:border-transparent outline-none shadow-sm transition-all"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Service Category</label>
+                <select
+                  name="category"
+                  defaultValue={editingVendor.category}
+                  className="w-full border border-stone-200 rounded-xl p-3 bg-white text-gray-800 focus:ring-2 focus:ring-wedding-gold focus:border-transparent outline-none shadow-sm appearance-none cursor-pointer transition-all"
+                >
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Estimated Price ($)</label>
+                  <input
+                    name="price"
+                    type="number"
+                    defaultValue={editingVendor.priceEstimate}
+                    required
+                    className="w-full border border-stone-200 rounded-xl p-3 bg-white text-gray-800 focus:ring-2 focus:ring-wedding-gold focus:border-transparent outline-none shadow-sm transition-all"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Location</label>
+                  <input
+                    name="location"
+                    defaultValue={editingVendor.location}
+                    className="w-full border border-stone-200 rounded-xl p-3 bg-white text-gray-800 focus:ring-2 focus:ring-wedding-gold focus:border-transparent outline-none shadow-sm transition-all"
+                  />
+                </div>
+              </div>
+
+               <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Notes</label>
+                  <textarea
+                    name="notes"
+                    defaultValue={editingVendor.notes}
+                    className="w-full border border-stone-200 rounded-xl p-3 bg-white text-gray-800 focus:ring-2 focus:ring-wedding-gold focus:border-transparent outline-none shadow-sm transition-all"
+                    rows={2}
+                  />
+               </div>
+
+              <div className="pt-2">
+                <button type="submit" className="w-full bg-wedding-gold text-white py-4 rounded-xl font-bold hover:bg-yellow-600 transition-all shadow-lg shadow-wedding-gold/20 flex items-center justify-center gap-2">
+                  <Check size={20} />
+                  Save Changes
                 </button>
               </div>
             </form>
