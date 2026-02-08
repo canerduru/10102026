@@ -1,11 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Guest } from '../types';
-import { Search, Download, Plus, Trash2, User, Users } from 'lucide-react';
+import { Search, Download, Plus, Trash2, User } from 'lucide-react';
 
 interface GuestListProps {
   guests: Guest[];
   setGuests: React.Dispatch<React.SetStateAction<Guest[]>>;
 }
+
+const GuestInput: React.FC<{
+  value: string;
+  placeholder: string;
+  onSave: (val: string) => void;
+}> = ({ value, placeholder, onSave }) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  // Sync local state if prop changes externally (e.g. initial load or reset)
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleBlur = () => {
+    if (localValue !== value) {
+      onSave(localValue);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur(); // Trigger blur to save
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      placeholder={placeholder}
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      className="flex-1 p-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-1 focus:ring-wedding-gold outline-none transition-shadow"
+    />
+  );
+};
 
 const GuestList: React.FC<GuestListProps> = ({ guests, setGuests }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,11 +66,11 @@ const GuestList: React.FC<GuestListProps> = ({ guests, setGuests }) => {
   };
 
   const updateGuest = (id: string, field: 'firstName' | 'lastName', value: string) => {
-    setGuests(guests.map(g => g.id === id ? { ...g, [field]: value } : g));
+    setGuests(current => current.map(g => g.id === id ? { ...g, [field]: value } : g));
   };
 
   const removeGuest = (id: string) => {
-    setGuests(guests.filter(g => g.id !== id));
+    setGuests(current => current.filter(g => g.id !== id));
   };
 
   const exportToCSV = () => {
@@ -74,19 +111,15 @@ const GuestList: React.FC<GuestListProps> = ({ guests, setGuests }) => {
         )}
         {guestsList.map(guest => (
           <div key={guest.id} className="flex gap-2 items-center animate-fade-in group">
-            <input
-              type="text"
+            <GuestInput
               placeholder="First Name"
               value={guest.firstName}
-              onChange={(e) => updateGuest(guest.id, 'firstName', e.target.value)}
-              className="flex-1 p-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-1 focus:ring-wedding-gold outline-none transition-shadow"
+              onSave={(val) => updateGuest(guest.id, 'firstName', val)}
             />
-            <input
-              type="text"
+            <GuestInput
               placeholder="Last Name"
               value={guest.lastName}
-              onChange={(e) => updateGuest(guest.id, 'lastName', e.target.value)}
-              className="flex-1 p-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-1 focus:ring-wedding-gold outline-none transition-shadow"
+              onSave={(val) => updateGuest(guest.id, 'lastName', val)}
             />
             <button
               onClick={() => removeGuest(guest.id)}
