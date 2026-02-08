@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { InspirationNote } from '../types';
-import { Plus, Sparkles, Loader2, X } from 'lucide-react';
+import { Plus, Sparkles, Loader2, X, Upload } from 'lucide-react';
 import { analyzeInspirationIdea } from '../services/geminiService';
+import { storage } from '../services/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface InspirationBoardProps {
   notes: InspirationNote[];
@@ -12,18 +14,39 @@ const InspirationBoard: React.FC<InspirationBoardProps> = ({ notes, setNotes }) 
   const [isAdding, setIsAdding] = useState(false);
   const [newNoteContent, setNewNoteContent] = useState('');
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const addNote = () => {
-    if (!newNoteContent.trim()) return;
+  const addNote = async () => {
+    if (!newNoteContent.trim() && !selectedFile) return;
+
+    setUploading(true);
+    let imageUrl = `https://picsum.photos/400/300?random=${Math.random()}`;
+
+    if (selectedFile) {
+      try {
+        const storageRef = ref(storage, `inspiration/${Date.now()}_${selectedFile.name}`);
+        const snapshot = await uploadBytes(storageRef, selectedFile);
+        imageUrl = await getDownloadURL(snapshot.ref);
+      } catch (error) {
+        console.error("Upload failed", error);
+        alert("Failed to upload image. Please try again.");
+        setUploading(false);
+        return;
+      }
+    }
+
     const note: InspirationNote = {
       id: Math.random().toString(36).substr(2, 9),
       content: newNoteContent,
       category: 'General',
-      imageUrl: `https://picsum.photos/400/300?random=${Math.random()}`
+      imageUrl: imageUrl
     };
     setNotes([note, ...notes]);
     setNewNoteContent('');
+    setSelectedFile(null);
     setIsAdding(false);
+    setUploading(false);
   };
 
   const handleAIAnalysis = async (id: string, content: string) => {
@@ -57,9 +80,28 @@ const InspirationBoard: React.FC<InspirationBoardProps> = ({ notes, setNotes }) 
             value={newNoteContent}
             onChange={(e) => setNewNoteContent(e.target.value)}
           />
+          <div className="mt-3">
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-wedding-gold transition-colors w-fit">
+              <Upload size={16} />
+              <span>{selectedFile ? selectedFile.name : "Upload Photo"}</span>
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setSelectedFile(e.target.files[0]);
+                  }
+                }}
+              />
+            </label>
+          </div>
           <div className="flex justify-end gap-2 mt-2">
-            <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-gray-500 hover:text-gray-700">Cancel</button>
-            <button onClick={addNote} className="px-4 py-2 bg-wedding-gold text-white rounded-lg">Save Note</button>
+            <button onClick={() => { setIsAdding(false); setSelectedFile(null); }} className="px-4 py-2 text-gray-500 hover:text-gray-700">Cancel</button>
+            <button onClick={addNote} disabled={uploading} className="px-4 py-2 bg-wedding-gold text-white rounded-lg flex items-center gap-2">
+              {uploading && <Loader2 className="animate-spin" size={16} />}
+              Save Note
+            </button>
           </div>
         </div>
       )}
@@ -76,6 +118,11 @@ const InspirationBoard: React.FC<InspirationBoardProps> = ({ notes, setNotes }) 
                 </button>
             </div>
             
+            {note.imageUrl && (
+              <div className="h-48 overflow-hidden bg-gray-100 border-b border-stone-100">
+                <img src={note.imageUrl} alt="Inspiration" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              </div>
+            )}
             <div className="p-5">
               <p className="font-serif text-lg text-gray-800 mb-4 pr-6 leading-snug">{note.content}</p>
               
