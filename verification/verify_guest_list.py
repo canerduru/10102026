@@ -53,7 +53,7 @@ def verify_guest_list():
 
         # Verify Search
         print("Verifying Search...")
-        page.fill("input[placeholder='Search Guests...']", "Alice")
+        page.fill("input[placeholder='Search...']", "Alice")
 
         # Alice should be visible, Bob should not
         # wait for filtering
@@ -70,7 +70,7 @@ def verify_guest_list():
             print("Bob NOT filtered out!")
 
         # Clear search to show both
-        page.fill("input[placeholder='Search Guests...']", "")
+        page.fill("input[placeholder='Search...']", "")
         page.wait_for_timeout(500)
 
         # Take screenshot

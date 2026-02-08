@@ -1,53 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Guest } from '../types';
-import { Search, Download, Plus, Trash2, User } from 'lucide-react';
+import { Search, Download, Plus, Trash2, User, Save, RefreshCw } from 'lucide-react';
 
 interface GuestListProps {
   guests: Guest[];
   setGuests: React.Dispatch<React.SetStateAction<Guest[]>>;
+  onSave: (newGuests: Guest[]) => void;
 }
 
-const GuestInput: React.FC<{
-  value: string;
-  placeholder: string;
-  onSave: (val: string) => void;
-}> = ({ value, placeholder, onSave }) => {
-  const [localValue, setLocalValue] = useState(value);
-
-  // Sync local state if prop changes externally (e.g. initial load or reset)
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleBlur = () => {
-    if (localValue !== value) {
-      onSave(localValue);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.currentTarget.blur(); // Trigger blur to save
-    }
-  };
-
-  return (
-    <input
-      type="text"
-      placeholder={placeholder}
-      value={localValue}
-      onChange={(e) => setLocalValue(e.target.value)}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      className="flex-1 p-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-1 focus:ring-wedding-gold outline-none transition-shadow"
-    />
-  );
-};
-
-const GuestList: React.FC<GuestListProps> = ({ guests, setGuests }) => {
+const GuestList: React.FC<GuestListProps> = ({ guests, setGuests, onSave }) => {
+  // Use a local copy of guests to decouple UI updates from the main App state (and thus Firebase sync)
+  const [localGuests, setLocalGuests] = useState<Guest[]>(guests);
   const [searchTerm, setSearchTerm] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const initialMount = useRef(true);
 
-  const filteredGuests = guests.filter(guest =>
+  // Sync local state if prop changes externally (e.g. initial load),
+  // but only if we don't have unsaved changes to avoid overwriting user work
+  useEffect(() => {
+    if (!hasUnsavedChanges && JSON.stringify(guests) !== JSON.stringify(localGuests)) {
+        setLocalGuests(guests);
+    }
+  }, [guests]);
+
+  // Save on unmount (switching tabs)
+  useEffect(() => {
+    return () => {
+      if (hasUnsavedChanges) {
+        onSave(localGuests);
+      }
+    };
+  }, [localGuests, hasUnsavedChanges]);
+
+  const handleLocalChange = (newGuests: Guest[]) => {
+    setLocalGuests(newGuests);
+    setHasUnsavedChanges(true);
+  };
+
+  const saveChanges = () => {
+    onSave(localGuests);
+    setHasUnsavedChanges(false);
+  };
+
+  const filteredGuests = localGuests.filter(guest =>
     guest.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     guest.lastName.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -62,20 +57,20 @@ const GuestList: React.FC<GuestListProps> = ({ guests, setGuests }) => {
       lastName: '',
       side
     };
-    setGuests([...guests, newGuest]);
+    handleLocalChange([...localGuests, newGuest]);
   };
 
   const updateGuest = (id: string, field: 'firstName' | 'lastName', value: string) => {
-    setGuests(current => current.map(g => g.id === id ? { ...g, [field]: value } : g));
+    handleLocalChange(localGuests.map(g => g.id === id ? { ...g, [field]: value } : g));
   };
 
   const removeGuest = (id: string) => {
-    setGuests(current => current.filter(g => g.id !== id));
+    handleLocalChange(localGuests.filter(g => g.id !== id));
   };
 
   const exportToCSV = () => {
     const headers = ['Side', 'First Name', 'Last Name'];
-    const rows = guests.map(g => [
+    const rows = localGuests.map(g => [
       g.side === 'bride' ? "Bride's Side" : "Groom's Side",
       g.firstName,
       g.lastName
@@ -111,15 +106,19 @@ const GuestList: React.FC<GuestListProps> = ({ guests, setGuests }) => {
         )}
         {guestsList.map(guest => (
           <div key={guest.id} className="flex gap-2 items-center animate-fade-in group">
-            <GuestInput
+            <input
+              type="text"
               placeholder="First Name"
               value={guest.firstName}
-              onSave={(val) => updateGuest(guest.id, 'firstName', val)}
+              onChange={(e) => updateGuest(guest.id, 'firstName', e.target.value)}
+              className="flex-1 p-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-1 focus:ring-wedding-gold outline-none transition-shadow"
             />
-            <GuestInput
+            <input
+              type="text"
               placeholder="Last Name"
               value={guest.lastName}
-              onSave={(val) => updateGuest(guest.id, 'lastName', val)}
+              onChange={(e) => updateGuest(guest.id, 'lastName', e.target.value)}
+              className="flex-1 p-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-1 focus:ring-wedding-gold outline-none transition-shadow"
             />
             <button
               onClick={() => removeGuest(guest.id)}
@@ -152,12 +151,29 @@ const GuestList: React.FC<GuestListProps> = ({ guests, setGuests }) => {
           <p className="text-gray-500 text-sm">Manage your invitees for both sides.</p>
         </div>
 
-        <div className="flex gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
+        <div className="flex gap-3 w-full md:w-auto items-center">
+            {hasUnsavedChanges && (
+                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest animate-pulse mr-2 hidden md:block">
+                    Unsaved Changes
+                </span>
+            )}
+            <button
+                onClick={saveChanges}
+                disabled={!hasUnsavedChanges}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shadow-md transition-all ${
+                    hasUnsavedChanges
+                    ? 'bg-wedding-gold text-white hover:bg-yellow-600 shadow-wedding-gold/20'
+                    : 'bg-stone-200 text-gray-400 cursor-default'
+                }`}
+            >
+                <Save size={16} /> <span className="hidden sm:inline">Save Changes</span>
+            </button>
+
+          <div className="relative flex-1 md:w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
               type="text"
-              placeholder="Search Guests..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 border border-stone-200 rounded-full text-sm focus:ring-2 focus:ring-wedding-gold outline-none shadow-sm"
@@ -167,7 +183,7 @@ const GuestList: React.FC<GuestListProps> = ({ guests, setGuests }) => {
             onClick={exportToCSV}
             className="flex items-center gap-2 px-4 py-2 bg-wedding-charcoal text-white rounded-full text-sm font-bold shadow-md hover:bg-black transition-colors whitespace-nowrap"
           >
-            <Download size={16} /> <span className="hidden sm:inline">Download List</span>
+            <Download size={16} />
           </button>
         </div>
       </div>
