@@ -49,10 +49,18 @@ export interface InspirationNote {
   imageUrl?: string;
 }
 
+export interface Guest {
+  id: string;
+  firstName: string;
+  lastName: string;
+  side: 'bride' | 'groom';
+}
+
 export interface AppState {
   vendors: Vendor[];
   budget: BudgetItem[];
   notes: InspirationNote[];
+  guests: Guest[];
   categories: string[];
 }
 
@@ -61,5 +69,6 @@ export enum ViewState {
   VENDORS = 'VENDORS',
   BUDGET = 'BUDGET',
   INSPIRATION = 'INSPIRATION',
+  GUEST_LIST = 'GUEST_LIST',
   AI_CHAT = 'AI_CHAT'
 }

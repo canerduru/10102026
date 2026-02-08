@@ -1,4 +1,4 @@
-import { BudgetItem, Vendor, DefaultVendorCategory, InspirationNote } from './types';
+import { BudgetItem, Vendor, DefaultVendorCategory, InspirationNote, Guest } from './types';
 
 export const INITIAL_CATEGORIES: string[] = Object.values(DefaultVendorCategory);
 
@@ -78,3 +78,5 @@ export const INITIAL_NOTES: InspirationNote[] = [
     aiSuggestion: 'Great choice! Ensure the saxophonist has a portable setup. A great local vendor for this is "Bodrum Jazz Vibes". Budget approx $400-600.'
   }
 ];
+
+export const INITIAL_GUESTS: Guest[] = [];

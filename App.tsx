@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ViewState, AppState } from './types';
-import { INITIAL_BUDGET, INITIAL_VENDORS, INITIAL_NOTES, INITIAL_CATEGORIES } from './constants';
+import { INITIAL_BUDGET, INITIAL_VENDORS, INITIAL_NOTES, INITIAL_CATEGORIES, INITIAL_GUESTS } from './constants';
 import Dashboard from './components/Dashboard';
 import VendorManager from './components/VendorManager';
 import BudgetView from './components/BudgetView';
 import InspirationBoard from './components/InspirationBoard';
+import GuestList from './components/GuestList';
 import AIChat from './components/AIChat';
 import LoginScreen from './components/LoginScreen';
-import { LayoutDashboard, Users, PieChart, Lightbulb, Menu, X, LogOut, Database, Download, Upload, RefreshCw, Wifi, AlertCircle, Settings, Heart, Maximize, Minimize } from 'lucide-react';
+import { LayoutDashboard, Users, PieChart, Lightbulb, Menu, X, LogOut, Database, Download, Upload, RefreshCw, Wifi, AlertCircle, Settings, Heart, Maximize, Minimize, UserPlus } from 'lucide-react';
 import { ref, onValue, set, off, Database as FirebaseDatabaseType } from 'firebase/database';
 import { db } from './services/firebase';
 
@@ -26,6 +27,7 @@ const App: React.FC = () => {
   const [vendors, setVendors] = useState(INITIAL_VENDORS);
   const [budget, setBudget] = useState(INITIAL_BUDGET);
   const [notes, setNotes] = useState(INITIAL_NOTES);
+  const [guests, setGuests] = useState(INITIAL_GUESTS);
   const [categories, setCategories] = useState<string[]>(INITIAL_CATEGORIES);
 
   const dbRef = useRef<FirebaseDatabaseType | null>(null);
@@ -66,6 +68,7 @@ const App: React.FC = () => {
           if (data.vendors) setVendors(data.vendors);
           if (data.budget) setBudget(data.budget);
           if (data.notes) setNotes(data.notes);
+          if (data.guests) setGuests(data.guests);
           if (data.categories) setCategories(data.categories);
           setTimeout(() => { remoteChangeInProgress.current = false; }, 500);
         }
@@ -81,7 +84,7 @@ const App: React.FC = () => {
     const timer = setTimeout(async () => {
       setIsSyncing(true);
       try {
-        const safeData = JSON.parse(JSON.stringify({ vendors, budget, notes, categories }));
+        const safeData = JSON.parse(JSON.stringify({ vendors, budget, notes, guests, categories }));
         await set(ref(dbRef.current!, DB_PATH), safeData);
         setShowSavedToast(true);
         setTimeout(() => setShowSavedToast(false), 2000);
@@ -93,9 +96,9 @@ const App: React.FC = () => {
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [vendors, budget, notes, categories, connectionStatus]);
+  }, [vendors, budget, notes, guests, categories, connectionStatus]);
 
-  const state: AppState = { vendors, budget, notes, categories };
+  const state: AppState = { vendors, budget, notes, guests, categories };
 
   if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
@@ -123,6 +126,7 @@ const App: React.FC = () => {
               { id: ViewState.VENDORS, label: 'Vendors', icon: Users },
               { id: ViewState.BUDGET, label: 'Budget & Costs', icon: PieChart },
               { id: ViewState.INSPIRATION, label: 'Inspiration', icon: Lightbulb },
+              { id: ViewState.GUEST_LIST, label: 'Guest List', icon: UserPlus },
             ].map((item) => (
               <button
                 key={item.id}
@@ -179,6 +183,7 @@ const App: React.FC = () => {
             <button onClick={() => { setView(ViewState.VENDORS); setMobileMenuOpen(false); }} className="p-4 bg-stone-100 rounded-xl flex items-center gap-3 font-bold"><Users /> Vendors</button>
             <button onClick={() => { setView(ViewState.BUDGET); setMobileMenuOpen(false); }} className="p-4 bg-stone-100 rounded-xl flex items-center gap-3 font-bold"><PieChart /> Budget</button>
             <button onClick={() => { setView(ViewState.INSPIRATION); setMobileMenuOpen(false); }} className="p-4 bg-stone-100 rounded-xl flex items-center gap-3 font-bold"><Lightbulb /> Inspiration</button>
+            <button onClick={() => { setView(ViewState.GUEST_LIST); setMobileMenuOpen(false); }} className="p-4 bg-stone-100 rounded-xl flex items-center gap-3 font-bold"><UserPlus /> Guest List</button>
             <button onClick={() => setIsAuthenticated(false)} className="p-4 text-red-500 mt-auto font-bold border-t"><LogOut /> Sign Out</button>
           </div>
         )}
@@ -188,6 +193,7 @@ const App: React.FC = () => {
           {view === ViewState.VENDORS && <VendorManager vendors={vendors} setVendors={setVendors} categories={categories} setCategories={setCategories} />}
           {view === ViewState.BUDGET && <BudgetView budget={budget} setBudget={setBudget} vendors={vendors} categories={categories} />}
           {view === ViewState.INSPIRATION && <InspirationBoard notes={notes} setNotes={setNotes} />}
+          {view === ViewState.GUEST_LIST && <GuestList guests={guests} setGuests={setGuests} />}
         </div>
         <AIChat />
       </main>
@@ -211,7 +217,7 @@ const App: React.FC = () => {
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Data Control</p>
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={() => {
-                    const data = JSON.stringify({ vendors, budget, notes }, null, 2);
+                    const data = JSON.stringify({ vendors, budget, notes, guests }, null, 2);
                     const blob = new Blob([data], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a'); a.href = url; a.download = 'wedding_backup.json'; a.click();
