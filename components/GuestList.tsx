@@ -8,6 +8,77 @@ interface GuestListProps {
   onSave: (newGuests: Guest[]) => void;
 }
 
+// Separate component definition to prevent remounting issues
+interface GuestColumnProps {
+  title: string;
+  side: 'bride' | 'groom';
+  guestsList: Guest[];
+  onAddGuest: (side: 'bride' | 'groom') => void;
+  onUpdateGuest: (id: string, field: 'firstName' | 'lastName', value: string) => void;
+  onRemoveGuest: (id: string) => void;
+}
+
+const GuestColumn: React.FC<GuestColumnProps> = ({
+  title,
+  side,
+  guestsList,
+  onAddGuest,
+  onUpdateGuest,
+  onRemoveGuest
+}) => (
+  <div className="flex-1 bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden flex flex-col h-full">
+    <div className={`p-4 border-b border-stone-100 flex items-center justify-between ${side === 'bride' ? 'bg-wedding-blush/20' : 'bg-blue-50/50'}`}>
+      <h3 className="font-serif font-bold text-lg text-wedding-charcoal flex items-center gap-2">
+        {side === 'bride' ? <User className="text-pink-400" size={20} /> : <User className="text-blue-400" size={20} />}
+        {title}
+      </h3>
+      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{guestsList.length} Guests</span>
+    </div>
+
+    <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+      {guestsList.length === 0 && (
+        <div className="text-center py-8 text-gray-400 italic text-sm">
+          No guests added yet.
+        </div>
+      )}
+      {guestsList.map(guest => (
+        <div key={guest.id} className="flex gap-2 items-center animate-fade-in group">
+          <input
+            type="text"
+            placeholder="First Name"
+            value={guest.firstName}
+            onChange={(e) => onUpdateGuest(guest.id, 'firstName', e.target.value)}
+            className="flex-1 p-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-1 focus:ring-wedding-gold outline-none transition-shadow"
+          />
+          <input
+            type="text"
+            placeholder="Last Name"
+            value={guest.lastName}
+            onChange={(e) => onUpdateGuest(guest.id, 'lastName', e.target.value)}
+            className="flex-1 p-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-1 focus:ring-wedding-gold outline-none transition-shadow"
+          />
+          <button
+            onClick={() => onRemoveGuest(guest.id)}
+            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+            title="Remove Guest"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      ))}
+    </div>
+
+    <div className="p-4 border-t border-stone-100 bg-stone-50/50">
+      <button
+        onClick={() => onAddGuest(side)}
+        className="w-full py-2 border-2 border-dashed border-stone-300 rounded-lg text-stone-500 font-bold text-sm flex items-center justify-center gap-2 hover:border-wedding-gold hover:text-wedding-gold hover:bg-white transition-all"
+      >
+        <Plus size={16} /> Add Guest
+      </button>
+    </div>
+  </div>
+);
+
 const GuestList: React.FC<GuestListProps> = ({ guests, setGuests, onSave }) => {
   // Use a local copy of guests to decouple UI updates from the main App state (and thus Firebase sync)
   const [localGuests, setLocalGuests] = useState<Guest[]>(guests);
@@ -98,60 +169,6 @@ const GuestList: React.FC<GuestListProps> = ({ guests, setGuests, onSave }) => {
     document.body.removeChild(link);
   };
 
-  const GuestColumn = ({ title, side, guestsList }: { title: string, side: 'bride' | 'groom', guestsList: Guest[] }) => (
-    <div className="flex-1 bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden flex flex-col h-full">
-      <div className={`p-4 border-b border-stone-100 flex items-center justify-between ${side === 'bride' ? 'bg-wedding-blush/20' : 'bg-blue-50/50'}`}>
-        <h3 className="font-serif font-bold text-lg text-wedding-charcoal flex items-center gap-2">
-          {side === 'bride' ? <User className="text-pink-400" size={20} /> : <User className="text-blue-400" size={20} />}
-          {title}
-        </h3>
-        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{guestsList.length} Guests</span>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-        {guestsList.length === 0 && (
-          <div className="text-center py-8 text-gray-400 italic text-sm">
-            No guests added yet.
-          </div>
-        )}
-        {guestsList.map(guest => (
-          <div key={guest.id} className="flex gap-2 items-center animate-fade-in group">
-            <input
-              type="text"
-              placeholder="First Name"
-              value={guest.firstName}
-              onChange={(e) => updateGuest(guest.id, 'firstName', e.target.value)}
-              className="flex-1 p-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-1 focus:ring-wedding-gold outline-none transition-shadow"
-            />
-            <input
-              type="text"
-              placeholder="Last Name"
-              value={guest.lastName}
-              onChange={(e) => updateGuest(guest.id, 'lastName', e.target.value)}
-              className="flex-1 p-2 bg-stone-50 border border-stone-200 rounded-lg text-sm focus:ring-1 focus:ring-wedding-gold outline-none transition-shadow"
-            />
-            <button
-              onClick={() => removeGuest(guest.id)}
-              className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-              title="Remove Guest"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <div className="p-4 border-t border-stone-100 bg-stone-50/50">
-        <button
-          onClick={() => addGuest(side)}
-          className="w-full py-2 border-2 border-dashed border-stone-300 rounded-lg text-stone-500 font-bold text-sm flex items-center justify-center gap-2 hover:border-wedding-gold hover:text-wedding-gold hover:bg-white transition-all"
-        >
-          <Plus size={16} /> Add Guest
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="h-full flex flex-col space-y-6">
       {/* Header & Tools */}
@@ -200,8 +217,22 @@ const GuestList: React.FC<GuestListProps> = ({ guests, setGuests, onSave }) => {
 
       {/* Lists Container */}
       <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-0 pb-6">
-        <GuestColumn title="Bride's Side" side="bride" guestsList={brideGuests} />
-        <GuestColumn title="Groom's Side" side="groom" guestsList={groomGuests} />
+        <GuestColumn
+          title="Bride's Side"
+          side="bride"
+          guestsList={brideGuests}
+          onAddGuest={addGuest}
+          onUpdateGuest={updateGuest}
+          onRemoveGuest={removeGuest}
+        />
+        <GuestColumn
+          title="Groom's Side"
+          side="groom"
+          guestsList={groomGuests}
+          onAddGuest={addGuest}
+          onUpdateGuest={updateGuest}
+          onRemoveGuest={removeGuest}
+        />
       </div>
     </div>
   );
