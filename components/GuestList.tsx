@@ -13,7 +13,16 @@ const GuestList: React.FC<GuestListProps> = ({ guests, setGuests, onSave }) => {
   const [localGuests, setLocalGuests] = useState<Guest[]>(guests);
   const [searchTerm, setSearchTerm] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const initialMount = useRef(true);
+
+  // Refs to hold latest state for unmount cleanup
+  const localGuestsRef = useRef(localGuests);
+  const hasUnsavedChangesRef = useRef(hasUnsavedChanges);
+
+  // Sync refs whenever state changes
+  useEffect(() => {
+    localGuestsRef.current = localGuests;
+    hasUnsavedChangesRef.current = hasUnsavedChanges;
+  }, [localGuests, hasUnsavedChanges]);
 
   // Sync local state if prop changes externally (e.g. initial load),
   // but only if we don't have unsaved changes to avoid overwriting user work
@@ -23,14 +32,15 @@ const GuestList: React.FC<GuestListProps> = ({ guests, setGuests, onSave }) => {
     }
   }, [guests]);
 
-  // Save on unmount (switching tabs)
+  // Save ONLY on unmount (switching tabs)
   useEffect(() => {
     return () => {
-      if (hasUnsavedChanges) {
-        onSave(localGuests);
+      // Access the latest values from refs
+      if (hasUnsavedChangesRef.current) {
+        onSave(localGuestsRef.current);
       }
     };
-  }, [localGuests, hasUnsavedChanges]);
+  }, []); // Empty dependency array ensures this only runs on mount/unmount
 
   const handleLocalChange = (newGuests: Guest[]) => {
     setLocalGuests(newGuests);
